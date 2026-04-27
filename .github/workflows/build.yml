@@ -8,27 +8,28 @@ on: [pull_request, push]
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v4
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
-      - name: setup jdk
-        uses: actions/setup-java@v4
+      - name: Checkout sources
+        uses: actions/checkout@v6
+      - name: Validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+      - name: Setup jdk
+        uses: actions/setup-java@v5
         with:
-          java-version: '21'
-          distribution: 'microsoft'
-      - name: setup gradle
-        uses: gradle/actions/setup-gradle@v4
-      - name: make gradle wrapper executable
+          distribution: 'temurin'
+          java-version: 21
+      - name: Setup gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Make gradle wrapper executable
         run: chmod +x ./gradlew
-      - name: build
+      - name: Build
         run: ./gradlew build
-      - name: capture build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Capture build artifacts
+        uses: actions/upload-artifact@v7
         with:
-          name: AskGemini-Build-${{ github.sha }}
+          name: AskGemini-Build-${{ github.run_id }}
           path: build/libs/
           retention-days: 5
           if-no-files-found: error
+          
