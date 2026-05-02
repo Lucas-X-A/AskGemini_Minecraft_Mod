@@ -28,7 +28,7 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	// Fabric API.
+	// Fabric API
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
@@ -40,32 +40,36 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
-	it.options.encoding = "UTF-8"
+	options.release = 21
+	options.encoding = "UTF-8"
 }
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 }
 
 jar {
-	inputs.property "archivesName", project.base.archivesName
+	def arcName = project.base.archivesName.get()
+	def modVersion = project.version
+	def modName = project.name
+
+	inputs.property("archivesName", arcName)
 
 	from("LICENSE") {
-		rename { "${it}_${project.base.archivesName.get()}"}
+		rename { fileName -> "${fileName}_${arcName}" }
 	}
 
 	manifest {
 		attributes([
 				"Specification-Title"     : "AskGemini",
 				"Specification-Vendor"    : "Luks_X_A",
-				"Specification-Version"   : project.version,
-				"Implementation-Title"    : project.name,
-				"Implementation-Version"  : project.version,
-				"Implementation-Vendor"   : "Luks_X_A",
-				"Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+				"Specification-Version"   : modVersion,
+				"Implementation-Title"    : modName,
+				"Implementation-Version"  : modVersion,
+				"Implementation-Vendor"   : "Luks_X_A"
 		])
 	}
 }
@@ -90,16 +94,18 @@ publishing {
 
 // Copy external mods to the run/mods directory before running the client in the development environment
 tasks.register('copyExternalMods', Copy) {
-	from("$rootDir/external-mods")
+	def externalModsDir = layout.projectDirectory.dir("external-mods")
+
+	from(externalModsDir)
 	include("**/*.jar")
-	into("$projectDir/run/mods")
-	doFirst {
-		file("$projectDir/run/mods").mkdirs()
+	into(layout.projectDirectory.dir("run/mods"))
+
+	onlyIf {
+		externalModsDir.asFile.exists() && externalModsDir.asFile.listFiles()?.any { it.name.endsWith('.jar') }
 	}
-	onlyIf { file("$rootDir/external-mods").exists() && file("$rootDir/external-mods").listFiles()?.any { it.name.endsWith('.jar') } }
 }
 
 // Guarantee that external mods are copied before running the client
-tasks.named('runClient') {
-	dependsOn 'copyExternalMods'
+tasks.named('runClient').configure {
+	dependsOn(copyExternalMods)
 }
